@@ -4,7 +4,6 @@ version = "0.1.0"
 description = ""
 authors = ["Brad Smith <bradster@infinitewarp.com>"]
 readme = "README.md"
-packages = [{include = "demo"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"

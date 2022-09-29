@@ -10,6 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import boto3
+import logging.config
+from os import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -123,3 +126,60 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CloudWatch logging via Watchtower
+
+CLOUDWATCH_AWS_ACCESS_KEY_ID = environ.get("CLOUDWATCH_AWS_ACCESS_KEY_ID")
+CLOUDWATCH_AWS_SECRET_ACCESS_KEY = environ.get("CLOUDWATCH_AWS_SECRET_ACCESS_KEY")
+CLOUDWATCH_AWS_REGION_NAME = environ.get("CLOUDWATCH_AWS_REGION_NAME", default="us-east-1")
+CLOUDWATCH_LOG_GROUP = environ.get("CLOUDWATCH_LOG_GROUP", default="demo-log-group")
+CLOUDWATCH_LOG_STREAM_NAME = environ.get("CLOUDWATCH_LOG_STREAM_NAME", default="demo-log-stream")
+CLOUDWATCH_LOG_GROUP_RETENTION_DAYS = int(
+    environ.get("CLOUDWATCH_LOG_GROUP_RETENTION_DAYS", default=1)
+)
+
+print("Configuring boto3 client for Watchtower")
+cloudwatch_boto3_logs_client = boto3.client(
+    "logs",
+    aws_access_key_id=CLOUDWATCH_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=CLOUDWATCH_AWS_SECRET_ACCESS_KEY,
+    region_name=CLOUDWATCH_AWS_REGION_NAME,
+)
+
+print("Configuring logging")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(asctime)s | %(levelname)s | "
+            "%(process)s | "
+            "%(filename)s:%(funcName)s:%(lineno)d | "
+            "%(message)s"
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": environ.get("LOG_LEVEL", default="INFO"),
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "watchtower": {
+            "level": environ.get("LOG_LEVEL", default="INFO"),
+            "class": "watchtower.CloudWatchLogHandler",
+            "boto3_client": cloudwatch_boto3_logs_client,
+            "log_group_name": CLOUDWATCH_LOG_GROUP,
+            "log_stream_name": CLOUDWATCH_LOG_STREAM_NAME,
+            "log_group_retention_days": CLOUDWATCH_LOG_GROUP_RETENTION_DAYS,
+            "formatter": "verbose",
+            "use_queues": False,
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": ["console", "watchtower"],
+            "level": environ.get("LOG_LEVEL", default="DEBUG"),
+        },
+    },
+}
+logging.config.dictConfig(LOGGING)

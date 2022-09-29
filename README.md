@@ -82,3 +82,7 @@ docker logs "${CONTAINER_ID}" > /tmp/ubi9-demo-logs.txt 2>&1
 # kill the container
 docker kill "${CONTAINER_ID}"
 ```
+
+## Results
+
+See the `results` directory of this repo for some typical examples I captured. It's difficult to eliminate or reduce all other variables, of course, but the tests captured here were all performed on gigabit ethernet (Google Fiber in NC, USA) to AWS `us-east-1` with no other major local CPU or network activity.

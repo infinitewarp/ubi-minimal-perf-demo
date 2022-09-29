@@ -1,0 +1,42 @@
+### Base Image
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-941 as base
+
+WORKDIR /opt/demo
+
+RUN microdnf update \
+    && microdnf install -y \
+        python39 \
+    && if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3.9 /usr/bin/python; fi
+
+
+### Build virtualenv
+FROM base as build
+
+COPY pyproject.toml poetry.lock ./
+RUN microdnf install -y \
+        gcc \
+        python39-devel \
+        python39-pip \
+    && if [ ! -e /usr/bin/pip ]; then ln -s /usr/bin/pip3.9 /usr/bin/pip ; fi \
+    && pip install -U pip \
+    && pip install poetry \
+    && poetry config virtualenvs.in-project true \
+    && poetry install -n --no-dev
+
+
+### Create a release image
+FROM base as release
+
+ENV VIRTUAL_ENV=/opt/demo/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Grab our built virtualenv
+COPY --from=build /opt/demo/.venv/ .venv/
+
+# Copy in demo code
+COPY demo .
+
+EXPOSE 8000
+
+ENTRYPOINT ["gunicorn"]
+CMD ["-c","demo/gunicorn.py","demo.wsgi"]

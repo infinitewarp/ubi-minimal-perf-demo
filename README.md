@@ -1,4 +1,10 @@
-Demonstration of UBI9 performance regression compared with UBI8.
+## Overview
+
+This repo contains a barebones Django project that uses Watchtower to record logs to AWS CloudWatch. A single view is defined to serve requests to `/` and respond with a simple `Hello!`. Internally, that view executes several `logger.info` calls to generate short messages for Watchtower to send to AWS.
+
+Unfortuantely, there appears to be a performance regression when migrating from UBI8 to UBI9 and using code like this. In repeated experiments, UBI9 appears to be consistently ~10% slower than UBI8 running the same Python code.
+
+The following instructions serve to demonstrate UBI9's performance regression compared with UBI8.
 
 ## Build
 
